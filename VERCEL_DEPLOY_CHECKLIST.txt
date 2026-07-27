@@ -1,0 +1,17 @@
+1. Extract the ZIP.
+2. Double-click PUSH_TO_GITHUB.cmd.
+3. In Vercel: Add New > Project > Import the GitHub repository.
+4. Framework Preset: Other.
+5. Root Directory: leave blank.
+6. Build Command: leave blank/default.
+7. Output Directory: leave blank/default.
+8. Deploy.
+9. Run GENERATE_SECRET.cmd.
+10. Vercel Project > Settings > Environment Variables:
+    RELAY_API_KEY = generated value
+    ALLOWED_HOSTS = exact domains you need
+    ALLOW_ANY_PUBLIC_HOST = false
+11. Apply variables to Production, Preview, and Development if desired.
+12. Redeploy.
+13. Open /api/health and verify configured:true.
+14. Open / and test an allowed URL.

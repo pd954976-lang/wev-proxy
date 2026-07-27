@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Private Web Relay</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #090909; color: #f5f5f5; min-height: 100vh; }
+    main { width: min(920px, calc(100% - 32px)); margin: 40px auto; }
+    .card { background: #151515; border: 1px solid #2a2a2a; border-radius: 20px; padding: 24px; box-shadow: 0 18px 60px rgba(0,0,0,.35); }
+    h1 { margin: 0 0 8px; font-size: clamp(28px, 5vw, 44px); }
+    p { color: #b7b7b7; line-height: 1.55; }
+    .grid { display: grid; grid-template-columns: 1fr 180px; gap: 14px; }
+    label { display: block; margin: 16px 0 7px; color: #d8d8d8; font-weight: 700; }
+    input, select, textarea { width: 100%; background: #0c0c0c; color: #fff; border: 1px solid #333; border-radius: 12px; padding: 13px; font: inherit; }
+    textarea { min-height: 150px; resize: vertical; }
+    button { margin-top: 18px; background: #00e889; color: #001b10; border: 0; border-radius: 999px; padding: 13px 22px; font-weight: 900; cursor: pointer; }
+    button:disabled { opacity: .55; cursor: wait; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #080808; border: 1px solid #292929; border-radius: 14px; padding: 16px; min-height: 120px; max-height: 430px; overflow: auto; }
+    .status { margin-top: 14px; color: #aaa; }
+    .warning { border-left: 4px solid #ffbf3f; padding-left: 12px; }
+    @media (max-width: 650px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<main>
+  <section class="card">
+    <h1>Private Web Relay</h1>
+    <p class="warning">This is an authenticated API relay—not SOCKS5, a VPN, or a browser-wide proxy. Keep the secret private and restrict allowed domains in Vercel.</p>
+
+    <label for="key">Relay secret</label>
+    <input id="key" type="password" autocomplete="off" placeholder="RELAY_API_KEY from Vercel" />
+
+    <div class="grid">
+      <div>
+        <label for="url">Public HTTP/HTTPS URL</label>
+        <input id="url" type="url" value="https://example.com/" />
+      </div>
+      <div>
+        <label for="method">Method</label>
+        <select id="method"><option>GET</option><option>HEAD</option><option>POST</option></select>
+      </div>
+    </div>
+
+    <label for="body">POST body (optional)</label>
+    <textarea id="body" placeholder='{"hello":"world"}'></textarea>
+
+    <button id="send">Send request</button>
+    <div id="status" class="status">Ready.</div>
+
+    <label>Response</label>
+    <pre id="output">No response yet.</pre>
+  </section>
+</main>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const keyInput = $("key");
+  keyInput.value = sessionStorage.getItem("relay-key") || "";
+
+  $("send").addEventListener("click", async () => {
+    const key = keyInput.value.trim();
+    const url = $("url").value.trim();
+    const method = $("method").value;
+    if (!key || !url) return alert("Enter the relay secret and a URL.");
+    sessionStorage.setItem("relay-key", key);
+
+    const payload = { url, method };
+    if (method === "POST" && $("body").value) {
+      payload.body = $("body").value;
+      payload.headers = { "content-type": "application/json" };
+    }
+
+    $("send").disabled = true;
+    $("status").textContent = "Requesting…";
+    $("output").textContent = "";
+    try {
+      const response = await fetch("/api/relay", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-relay-key": key },
+        body: JSON.stringify(payload)
+      });
+      const contentType = response.headers.get("content-type") || "";
+      const text = await response.text();
+      $("status").textContent = `HTTP ${response.status} • upstream ${response.headers.get("x-relay-upstream-status") || "n/a"}`;
+      if (contentType.includes("application/json")) {
+        try { $("output").textContent = JSON.stringify(JSON.parse(text), null, 2); }
+        catch { $("output").textContent = text; }
+      } else {
+        $("output").textContent = text;
+      }
+    } catch (error) {
+      $("status").textContent = "Request failed.";
+      $("output").textContent = String(error);
+    } finally {
+      $("send").disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

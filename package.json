@@ -1,0 +1,15 @@
+{
+  "name": "private-web-relay-vercel",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Authenticated, SSRF-hardened HTTP/HTTPS relay for Vercel Functions.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check api/relay.js && node --check api/health.js"
+  },
+  "license": "UNLICENSED"
+}
